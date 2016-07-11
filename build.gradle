@@ -1,0 +1,111 @@
+// ==== Links used in the creation of this build script
+// SPRING BOOT
+// https://spring.io/guides/gs/spring-boot/
+// SPRING BOOT WAR
+// https://spring.io/guides/gs/convert-jar-to-war/
+// http://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#build-tool-plugins-gradle-packaging
+// SPRING BOOT LOGGING
+// http://docs.spring.io/spring-boot/docs/current/reference/html/howto-logging.html
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.3.6.RELEASE")
+        classpath('org.flywaydb:flyway-gradle-plugin:4.0.3')
+    }
+}
+
+group = 'com.github.kristiankime'
+version = '0.0.0'
+description = "spring_experiment"
+
+apply plugin: 'java'
+apply plugin: 'war' 
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'org.flywaydb.flyway'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+eclipse {
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url "http://repo.spring.io/libs-snapshot" }
+}
+
+configurations {
+    providedRuntime
+}
+
+dependencies {
+    // ============ Start Spring setup ============
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-web'      ) { exclude module: "spring-boot-starter-tomcat" }
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa' )
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-data-rest')
+    compile(group: 'org.springframework.boot', name: 'spring-boot-starter-actuator' )
+    compile(group: 'org.postgresql',           name: 'postgresql',                   version: '9.4-1200-jdbc41') { exclude module: 'slf4j-simple' }
+
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test')
+
+    // Here we should only have one of
+    // (a) provided tomcat (for standard deployment)
+    // (b) stand alone jetty (for testing from gradle)
+    // see http://stackoverflow.com/questions/30965979/how-to-deploy-spring-boot-application-war-to-aws-elastic-beanstalk
+    // ----- (a) -----
+    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
+    providedCompile("javax.servlet:javax.servlet-api:3.1.0") // TODO javax.servlet-api bug http://stackoverflow.com/questions/25220468/spring-security-cannot-access-servletexception
+    // ----- (b) -----
+//        compile("org.springframework.boot:spring-boot-starter-jetty")
+//        compile("javax.servlet:javax.servlet-api:3.1.0") // TODO javax.servlet-api bug http://stackoverflow.com/questions/25220468/spring-security-cannot-access-servletexception
+        // ============ End Spring setup ============
+
+    testCompile(group: 'junit',              name: 'junit'                                       )
+    testCompile(group: 'org.mockito',		 name: 'mockito-core', 		   version: '2.0.30-beta')
+}
+
+springBoot {
+    mainClass = 'com.artclod.spring.config.Application'
+}
+
+// don't add this? http://stackoverflow.com/questions/29848088/cannot-run-the-war-generated-from-gradle-bootrepackage-in-a-jhipster-based-web-a
+//bootRepackage {
+//    mainClass = 'mil.navy.onr.stamps.config.StampsApplication'
+//}
+
+war {
+// http://stackoverflow.com/questions/29848088/cannot-run-the-war-generated-from-gradle-bootrepackage-in-a-jhipster-based-web-a
+    manifest {
+        attributes 'Main-Class' : 'org.springframework.boot.loader.WarLauncher',
+                   'Start-Class': 'com.artclod.spring.config.Application'
+    }
+    archiveName 'spring_experiment.war' // skip version number etc
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.12'
+}
+
+// This task will check the resources\db\migration folder and run any ddl scripts that have not been previously run on the
+// database that the connection string in the flyway plugin earlier in this file references
+flyway {
+    Properties props = new Properties()
+    def springProp = "application.properties"
+    props.load(new FileInputStream("${projectDir}/src/main/resources/" + springProp))
+    url = props."spring.datasource.url"
+    user = props."spring.datasource.username"
+    password = props."spring.datasource.password"
+
+    schemas = ['public'] //all the schemas that get modified would be listed
+    baselineOnMigrate = true
+    outOfOrder = false
+}
