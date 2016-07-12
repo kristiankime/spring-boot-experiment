@@ -13,6 +13,8 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
@@ -26,6 +28,9 @@ public class ProductServiceTest {
     @Autowired
     private ProductService productService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Test
     @Transactional
     @Rollback
@@ -38,7 +43,19 @@ public class ProductServiceTest {
     @Test
     @Transactional
     @Rollback
-    public void referenced_objects_are_also_immediately_available() throws Exception {
+    public void referenced_objects_are_also_immediately_available_with_transaction_and_flush_fails() throws Exception {
+        OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
+        ImitationProduct imitationProduct = productService.saveImitationProduct(new ImitationProduct("A good quality knock off", originalProduct.getId()));
+
+        entityManager.flush();
+
+        ImitationProduct imitationProductFound = productService.findOneImitationProduct(imitationProduct.getId());
+        assertEquals(originalProduct, imitationProductFound.getOriginalProduct());
+    }
+
+
+    @Test
+    public void referenced_objects_are_also_immediately_available_with_no_transaction_succeeds() throws Exception {
         OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
         ImitationProduct imitationProduct = productService.saveImitationProduct(new ImitationProduct("A good quality knock off", originalProduct.getId()));
 
