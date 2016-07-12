@@ -31,15 +31,7 @@ public class ProductServiceTest {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Test
-    @Transactional
-    @Rollback
-    public void saved_object_is_immediately_available() throws Exception {
-        OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
-
-        assertThat(productService.findAllOriginalProducts(), contains(originalProduct));
-    }
-
+    // TODO this test is failing because the @ManyToOne is not working in imitationProductFound.getOriginalProduct()
     @Test
     @Transactional
     @Rollback
@@ -53,7 +45,7 @@ public class ProductServiceTest {
         assertEquals(originalProduct, imitationProductFound.getOriginalProduct());
     }
 
-
+    // TODO this test is succeeding but does not rollback
     @Test
     public void referenced_objects_are_also_immediately_available_with_no_transaction_succeeds() throws Exception {
         OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
