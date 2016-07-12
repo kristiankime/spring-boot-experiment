@@ -2,6 +2,7 @@ package com.artclod.springexperiment.service;
 
 import com.artclod.springexperiment.config.Application;
 import com.artclod.springexperiment.db.entity.ImitationProduct;
+import com.artclod.springexperiment.db.entity.OriginalProduct;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -28,9 +30,20 @@ public class ProductServiceTest {
     @Transactional
     @Rollback
     public void saved_object_is_immediately_available() throws Exception {
-        ImitationProduct imitationProduct = productService.saveImitationProduct(new ImitationProduct("A good quality Knock Off"));
+        OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
 
-        assertThat(productService.findAllImitationProducts(), contains(imitationProduct));
+        assertThat(productService.findAllOriginalProducts(), contains(originalProduct));
+    }
+
+    @Test
+    @Transactional
+    @Rollback
+    public void referenced_objects_are_also_immediately_available() throws Exception {
+        OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
+        ImitationProduct imitationProduct = productService.saveImitationProduct(new ImitationProduct("A good quality knock off", originalProduct.getId()));
+
+        ImitationProduct imitationProductFound = productService.findOneImitationProduct(imitationProduct.getId());
+        assertEquals(originalProduct, imitationProductFound.getOriginalProduct());
     }
 
 }
