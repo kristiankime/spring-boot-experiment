@@ -5,6 +5,7 @@ import com.artclod.springexperiment.db.entity.ImitationProduct;
 import com.artclod.springexperiment.db.entity.OriginalProduct;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,12 +41,16 @@ public class ProductServiceTest {
         ImitationProduct imitationProduct = productService.saveImitationProduct(new ImitationProduct("A good quality knock off", originalProduct.getId()));
 
         entityManager.flush();
+        entityManager.detach(imitationProduct); // Detaching seems to make this test work unclear why, http://stackoverflow.com/questions/13382187/jpa-and-hibernate-proxy-behavior
 
         ImitationProduct imitationProductFound = productService.findOneImitationProduct(imitationProduct.getId());
         assertEquals(originalProduct, imitationProductFound.getOriginalProduct());
     }
 
-    // TODO this test is succeeding but does not rollback
+    /**
+     * This test suceeds but does not rollback
+     */
+    @Ignore
     @Test
     public void referenced_objects_are_also_immediately_available_with_no_transaction_succeeds() throws Exception {
         OriginalProduct originalProduct = productService.saveOriginalProduct(new OriginalProduct("The Original"));
